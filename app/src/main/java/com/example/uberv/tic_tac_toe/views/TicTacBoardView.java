@@ -9,6 +9,7 @@ import android.support.annotation.Size;
 import android.util.AttributeSet;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 
@@ -17,7 +18,32 @@ import com.example.uberv.tic_tac_toe.R;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 
-public class TicTacBoard extends LinearLayout {
+import butterknife.BindView;
+import butterknife.ButterKnife;
+import timber.log.Timber;
+
+public class TicTacBoardView extends FrameLayout {
+
+    // Line Statuses
+    // FIRST_ROW, SECOND_ROW,THIRD_ROW,FIRST_COLUMN, SECOND_COLUMN,THIRD_COLUMN,FORWARD_SLASH,BACKWARD_SLASH
+    public static final int LINE_NONE = 1000;
+    public static final int LINE_FIRST_ROW = 1001;
+    public static final int LINE_SECOND_ROW = 1002;
+    public static final int LINE_THIRD_ROW = 1003;
+    public static final int LINE_FIRST_COLUMN = 1004;
+    public static final int LINE_SECOND_COLUMN = 1005;
+    public static final int LINE_THIRD_COLUMN = 1006;
+    public static final int LINE_FORWARD_SLASH = 1007;
+    public static final int LINE_BACKWARD_SLASH = 1008;
+    // Figures
+    public static final int CROSS = 0;
+    public static final int CIRCLE = 1;
+    public static final int NONE = 2;
+
+    @BindView(R.id.root)
+    LinearLayout mLinearRoot;
+    @BindView(R.id.line)
+    ImageView mLine;
 
     private int mCrossColor;
     private int mCircleColor;
@@ -26,12 +52,12 @@ public class TicTacBoard extends LinearLayout {
     private int[][] mStatuses;
     private TicTacBoardClickListener mBoardClickListener;
 
-    public TicTacBoard(Context context) {
+    public TicTacBoardView(Context context) {
         super(context);
         init();
     }
 
-    public TicTacBoard(Context context, AttributeSet attrs) {
+    public TicTacBoardView(Context context, AttributeSet attrs) {
         super(context, attrs);
         init();
     }
@@ -43,25 +69,27 @@ public class TicTacBoard extends LinearLayout {
     }
 
     private void init() {
+//        ButterKnife.bind(this);
         // Configure
         // TODO does <merge> tag passes information here?
         // TODO make it to be squared
-        setOrientation(LinearLayout.VERTICAL);
 //        set
 
         // Inflate view
-        LayoutInflater.from(getContext()).inflate(R.layout.tic_tac_board, this, true);
+        View view = LayoutInflater.from(getContext()).inflate(R.layout.view_tic_tac_board, this, true);
+        ButterKnife.bind(this);
 
+        mLinearRoot.setOrientation(LinearLayout.VERTICAL);
         // Initialize fields
         mStatuses = new int[3][3];
         LinearLayout row;
         View image;
         for (int i = 0; i < 3; i++) {
-            row = (LinearLayout) getChildAt(i);
+            row = (LinearLayout) mLinearRoot.getChildAt(i);
             for (int j = 0; j < 3; j++) {
                 image = row.getChildAt(j);
                 image.setOnClickListener(createFieldClickListener(i, j));
-                mStatuses[i][j] = TicTacStatus.NONE;
+                mStatuses[i][j] = NONE;
             }
         }
 
@@ -93,19 +121,19 @@ public class TicTacBoard extends LinearLayout {
         ImageView image;
         int imageResource, tintColor;
         for (int i = 0; i < 3; i++) {
-            row = (LinearLayout) getChildAt(i);
+            row = (LinearLayout) mLinearRoot.getChildAt(i);
             for (int j = 0; j < 3; j++) {
                 image = (ImageView) row.getChildAt(j);
                 switch (mStatuses[i][j]) {
-                    case TicTacStatus.CIRCLE:
+                    case CIRCLE:
                         imageResource = R.drawable.circle;
                         tintColor = mCircleColor;
                         break;
-                    case TicTacStatus.CROSS:
+                    case CROSS:
                         imageResource = R.drawable.cross;
                         tintColor = mCrossColor;
                         break;
-                    case TicTacStatus.NONE:
+                    case NONE:
                     default:
                         imageResource = -1;
                         tintColor = -1;
@@ -113,7 +141,7 @@ public class TicTacBoard extends LinearLayout {
                 }
                 if (imageResource == -1) {
                     image.setImageDrawable(null);
-                    image.setImageResource(R.mipmap.ic_launcher);
+//                    image.setImageResource(R.mipmap.ic_launcher);
                 } else {
                     image.setImageResource(imageResource);
                     image.getDrawable().setTint(tintColor);
@@ -126,6 +154,29 @@ public class TicTacBoard extends LinearLayout {
         mStatuses[row][column] = status;
         // TODO calculate()
         adjustImages();
+
+        // TODO for debug
+        int width = getWidth();
+        int height = getHeight();
+        int itemHeight = ((LinearLayout) (mLinearRoot.getChildAt(0))).getChildAt(0).getHeight();
+        Timber.d("width: " + width + ", heigh: " + height);
+        int centerX = width / 2; // TODO maybe use one variable, since width and height should be equal already?
+        int centerY = height / 2;
+        int lineHeight = mLine.getHeight();
+//        mLine.animate().translationY(centerY - lineHeight / 2).rotation(45).scaleX(1.2f);
+        mLine.animate().translationY(itemHeight / 2 );
+    }
+
+    public void setLine(@LineStatus int status) {
+        switch (status) {
+            case LINE_NONE:
+                mLine.setVisibility(GONE);
+                break;
+            case LINE_FIRST_COLUMN:
+                mLine.setVisibility(VISIBLE);
+                mLine.animate().translationY(30);
+                break;
+        }
     }
 
     public TicTacBoardClickListener getBoardClickListener() {
@@ -137,12 +188,15 @@ public class TicTacBoard extends LinearLayout {
     }
 
     @Retention(RetentionPolicy.SOURCE)
-    @IntDef({TicTacStatus.NONE, TicTacStatus.CROSS, TicTacStatus.CIRCLE})
+    @IntDef({NONE, CROSS, CIRCLE})
     public static @interface TicTacStatus {
-        int CROSS = 0;
-        int CIRCLE = 1;
-        int NONE = 2;
     }
+
+    @Retention(RetentionPolicy.SOURCE)
+    @IntDef({NONE, LINE_FIRST_ROW, LINE_SECOND_ROW, LINE_THIRD_ROW, LINE_FIRST_COLUMN, LINE_SECOND_COLUMN, LINE_THIRD_COLUMN, LINE_FORWARD_SLASH, LINE_BACKWARD_SLASH})
+    @interface LineStatus {
+    }
+
 
     public static interface TicTacBoardClickListener {
         void onBoardItemClick(@IntRange(from = 0, to = 2) int row, @IntRange(from = 0, to = 2) int column, @TicTacStatus int currentStatus);

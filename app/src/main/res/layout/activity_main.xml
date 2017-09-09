@@ -9,7 +9,7 @@
     android:orientation="vertical"
     tools:context="com.example.uberv.tic_tac_toe.MainActivity">
 
-    <com.example.uberv.tic_tac_toe.views.TicTacBoard
+    <com.example.uberv.tic_tac_toe.views.TicTacBoardView
         android:id="@+id/board"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
